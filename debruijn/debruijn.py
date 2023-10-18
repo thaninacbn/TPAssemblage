@@ -155,8 +155,19 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
+    for path in path_list:
+        if delete_entry_node and delete_sink_node:
+            graph.remove_nodes_from(path)
 
-    pass
+        elif not delete_entry_node and not delete_sink_node:
+            graph.remove_nodes_from(path[1:len(path) - 1])
+
+        elif delete_entry_node:
+            graph.remove_nodes_from(path[:len(path) - 1])
+        elif delete_sink_node:
+            graph.remove_nodes_from(path[1:])
+
+    return graph
 
 
 def select_best_path(graph, path_list, path_length, weight_avg_list,
@@ -165,13 +176,27 @@ def select_best_path(graph, path_list, path_length, weight_avg_list,
 
     :param graph: (nx.DiGraph) A directed graph object
     :param path_list: (list) A list of path
-    :param path_length_list: (list) A list of length of each path
+    :param path_length: (list) A list of length of each path
     :param weight_avg_list: (list) A list of average weight of each path
     :param delete_entry_node: (boolean) True->We remove the first node of a path 
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+
+    if statistics.stdev(weight_avg_list) != 0:
+        maximum = weight_avg_list.index(max(weight_avg_list))
+        remove_list = [x for i, x in enumerate(path_list) if i != maximum]
+
+    else:
+        if statistics.stdev(path_length) > 0:
+            maximum = path_length.index(max(path_length))
+            remove_list = [x for i, x in enumerate(path_list) if i != maximum]
+        else:
+            rand_path_ix = random.randint(0, len(path_list))
+            remove_list = [x for i, x in enumerate(path_list) if i != rand_path_ix]
+
+    clean_graph = remove_paths(graph, remove_list, delete_entry_node, delete_sink_node)
+    return clean_graph
 
 
 def path_average_weight(graph, path):
@@ -192,7 +217,17 @@ def solve_bubble(graph, ancestor_node, descendant_node):
     :param descendant_node: (str) A downstream node in the graph
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    path_weights = []
+    path_len = []
+
+    possible_paths = nx.all_simple_paths(graph, ancestor_node, descendant_node)
+    for path in possible_paths:
+        path_len.append(len(path))
+        path_weights.append(path_average_weight(graph, path))
+
+    graph = select_best_path(graph, possible_paths, path_len, path_weights,
+                             delete_entry_node=False, delete_sink_node=False)
+    return graph
 
 
 def simplify_bubbles(graph):
@@ -260,7 +295,18 @@ def get_contigs(graph, starting_nodes, ending_nodes):
     :param ending_nodes: (list) A list of nodes without successors
     :return: (list) List of [contiguous sequence and their length]
     """
-    pass
+    contigs = []
+
+    for start_node in starting_nodes:
+        for end_node in ending_nodes:
+            if nx.has_path(graph, start_node, end_node):
+                paths = nx.all_simple_paths(graph, start_node, end_node)
+                for path in paths:
+                    contig = path[0]
+                    for node in path[1:]:
+                        contig += node[-1]
+                    contigs.append((contig, len(contig)))
+    return contigs
 
 
 def save_contigs(contigs_list, output_file):
@@ -269,7 +315,15 @@ def save_contigs(contigs_list, output_file):
     :param contig_list: (list) List of [contiguous sequence and their length]
     :param output_file: (str) Path to the output file
     """
-    pass
+
+    for i in range(len(contigs_list)):
+        print(contigs_list[i][1])
+
+    with open(output_file, "w") as outfile:
+        for i in range(len(contigs_list)):
+            outfile.write(f">contig_{i} len={contigs_list[i][1]}\n")
+            outfile.write(textwrap.fill(contigs_list[i][0], width=80))
+            outfile.write("\n")
 
 
 def draw_graph(graph, graphimg_file):  # pragma: no cover
