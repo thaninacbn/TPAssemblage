@@ -29,7 +29,6 @@ import statistics
 import textwrap
 import matplotlib.pyplot as plt
 
-
 matplotlib.use("Agg")
 
 __author__ = "Thanina CHABANE"
@@ -101,7 +100,7 @@ def cut_kmer(read, kmer_size):
     :return: A generator object that iterate the kmers of of size kmer_size.
     """
     read = read.strip()
-    for i in range(len(read) - kmer_size+1):
+    for i in range(len(read) - kmer_size + 1):
         yield read[i: i + kmer_size].strip()
 
 
@@ -138,16 +137,12 @@ def build_graph(kmer_dict):
     for kmer in kmer_dict.keys():
         ksize = len(kmer)
         # removes the last nucleotide
-        first_half = kmer[:ksize-1]
+        first_half = kmer[:ksize - 1]
         # removes the first nucleotide
         second_half = kmer[1:]
         graph.add_edge(first_half, second_half, weight=kmer_dict[kmer])
 
     return graph
-
-
-
-
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
@@ -160,8 +155,6 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-
-    
 
     pass
 
@@ -235,7 +228,13 @@ def get_starting_nodes(graph):
     :param graph: (nx.DiGraph) A directed graph object
     :return: (list) A list of all nodes without predecessors
     """
-    pass
+    start_nodes = []
+
+    for node in graph.nodes:
+        if len(list(graph.predecessors(node))) == 0:
+            start_nodes.append(node)
+
+    return start_nodes
 
 
 def get_sink_nodes(graph):
@@ -244,7 +243,13 @@ def get_sink_nodes(graph):
     :param graph: (nx.DiGraph) A directed graph object
     :return: (list) A list of all nodes without successors
     """
-    pass
+    sink_nodes = []
+
+    for node in graph.nodes:
+        if len(list(graph.successors(node))) == 0:
+            sink_nodes.append(node)
+
+    return sink_nodes
 
 
 def get_contigs(graph, starting_nodes, ending_nodes):
@@ -306,8 +311,5 @@ def draw_graph(graph, graphimg_file):  # pragma: no cover
     # if args.graphimg_file:
     #     draw_graph(graph, args.graphimg_file)
 
- #if __name__ == '__main__': # pragma: no cover
-   # main()
-
-
-
+# if __name__ == '__main__': # pragma: no cover
+# main()
