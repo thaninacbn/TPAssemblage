@@ -146,6 +146,10 @@ def build_graph(kmer_dict):
     return graph
 
 
+
+
+
+
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     """Remove a list of path in a graph. A path is set of connected node in
     the graph
@@ -157,7 +161,7 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     :return: (nx.DiGraph) A directed graph object
     """
 
-
+    
 
     pass
 
