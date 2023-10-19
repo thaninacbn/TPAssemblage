@@ -220,10 +220,10 @@ def solve_bubble(graph, ancestor_node, descendant_node):
     path_weights = []
     path_len = []
 
-    possible_paths = nx.all_simple_paths(graph, ancestor_node, descendant_node)
+    possible_paths = list(nx.all_simple_paths(graph, ancestor_node, descendant_node))
     for path in possible_paths:
         path_len.append(len(path))
-        path_weights.append(path_average_weight(graph, path))
+        path_weights.append(path_average_weight(grap * h, path))
 
     graph = select_best_path(graph, possible_paths, path_len, path_weights,
                              delete_entry_node=False, delete_sink_node=False)
@@ -236,16 +236,54 @@ def simplify_bubbles(graph):
     :param graph: (nx.DiGraph) A directed graph object
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    bubble = False
+    for node in graph.nodes:
+        predecessor_list = list(graph.predecessors(node))
+        if len(predecessor_list) > 1:
+            combinations = [(predecessor_list[i], predecessor_list[j]) for i in range(len(predecessor_list) - 1) for j
+                            in
+                            range(i + 1, len(predecessor_list)) if i != j]
+            for combination in combinations:
+                ancestor_node = nx.lowest_common_ancestor(graph, combination[0], combination[1])
+                if ancestor_node:
+                    bubble = True
+                    break
+        if bubble:
+            break
+
+    if bubble:
+        graph = simplify_bubbles(solve_bubble(graph, ancestor_node, node))
+    return graph
 
 
 def solve_entry_tips(graph, starting_nodes):
     """Remove entry tips
 
     :param graph: (nx.DiGraph) A directed graph object
-    :return: (nx.DiGraph) A directed graph object
+    :param starting_nodes: (list) List of starting nodes
+    :return: (nx.DiGraph) A directed graph object without unwanted entry paths
     """
-    pass
+
+    for node in list(graph.nodes):
+        all_paths_for_node = []
+        predecessors = list(graph.predecessors(node))
+        if len(predecessors) > 1:
+            for start_node in starting_nodes:
+                if node not in starting_nodes:
+                    paths = list(nx.all_simple_paths(graph, start_node, node))
+                    all_paths_for_node.append(paths[0])  # toujours un seul path
+                    print("single path", paths)
+            print("ALL", all_paths_for_node)
+            if len(all_paths_for_node) > 1:
+                path_length = [len(path) for path in all_paths_for_node]
+                path_weigths = [path_average_weight(graph, all_paths_for_node[i]) if path_length[i] > 1 else
+                                graph[paths[i][0]][paths[i][1]]["weight"] for i in range(len(all_paths_for_node))]
+                # print(all_paths_for_node)
+                print(path_weigths)
+                graph = select_best_path(graph, all_paths_for_node, path_length, path_weigths, delete_entry_node=True,
+                                         delete_sink_node=False)
+                break
+    return graph
 
 
 def solve_out_tips(graph, ending_nodes):
@@ -254,7 +292,27 @@ def solve_out_tips(graph, ending_nodes):
     :param graph: (nx.DiGraph) A directed graph object
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    for node in list(graph.nodes):
+        all_paths_for_node = []
+        successors = list(graph.successors(node))
+        if len(successors) > 1:
+            for end_node in ending_nodes:
+                if node not in ending_nodes:
+                    paths = list(nx.all_simple_paths(graph, node, end_node))
+                    print(paths)
+                    all_paths_for_node.append(paths[0])  # toujours un seul path
+                    print("single path", paths)
+            print("ALL", all_paths_for_node)
+            if len(all_paths_for_node) > 1:
+                path_length = [len(path) for path in all_paths_for_node]
+                path_weigths = [path_average_weight(graph, all_paths_for_node[i]) if path_length[i] > 1 else
+                                graph[paths[i][0]][paths[i][1]]["weight"] for i in range(len(all_paths_for_node))]
+                # print(all_paths_for_node)
+                print(path_weigths)
+                graph = select_best_path(graph, all_paths_for_node, path_length, path_weigths, delete_entry_node=False,
+                                         delete_sink_node=True)
+                break
+    return graph
 
 
 def get_starting_nodes(graph):
@@ -315,9 +373,6 @@ def save_contigs(contigs_list, output_file):
     :param contig_list: (list) List of [contiguous sequence and their length]
     :param output_file: (str) Path to the output file
     """
-
-    for i in range(len(contigs_list)):
-        print(contigs_list[i][1])
 
     with open(output_file, "w") as outfile:
         for i in range(len(contigs_list)):
