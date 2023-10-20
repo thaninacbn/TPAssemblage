@@ -223,7 +223,7 @@ def solve_bubble(graph, ancestor_node, descendant_node):
     possible_paths = list(nx.all_simple_paths(graph, ancestor_node, descendant_node))
     for path in possible_paths:
         path_len.append(len(path))
-        path_weights.append(path_average_weight(grap * h, path))
+        path_weights.append(path_average_weight(graph, path))
 
     graph = select_best_path(graph, possible_paths, path_len, path_weights,
                              delete_entry_node=False, delete_sink_node=False)
@@ -272,17 +272,17 @@ def solve_entry_tips(graph, starting_nodes):
                 if node not in starting_nodes:
                     paths = list(nx.all_simple_paths(graph, start_node, node))
                     all_paths_for_node.append(paths[0])  # toujours un seul path
-                    print("single path", paths)
-            print("ALL", all_paths_for_node)
+
             if len(all_paths_for_node) > 1:
                 path_length = [len(path) for path in all_paths_for_node]
                 path_weigths = [path_average_weight(graph, all_paths_for_node[i]) if path_length[i] > 1 else
                                 graph[paths[i][0]][paths[i][1]]["weight"] for i in range(len(all_paths_for_node))]
-                # print(all_paths_for_node)
-                print(path_weigths)
+
                 graph = select_best_path(graph, all_paths_for_node, path_length, path_weigths, delete_entry_node=True,
                                          delete_sink_node=False)
+                graph = solve_entry_tips(graph, starting_nodes)
                 break
+
     return graph
 
 
@@ -299,18 +299,15 @@ def solve_out_tips(graph, ending_nodes):
             for end_node in ending_nodes:
                 if node not in ending_nodes:
                     paths = list(nx.all_simple_paths(graph, node, end_node))
-                    print(paths)
                     all_paths_for_node.append(paths[0])  # toujours un seul path
-                    print("single path", paths)
-            print("ALL", all_paths_for_node)
             if len(all_paths_for_node) > 1:
                 path_length = [len(path) for path in all_paths_for_node]
                 path_weigths = [path_average_weight(graph, all_paths_for_node[i]) if path_length[i] > 1 else
                                 graph[paths[i][0]][paths[i][1]]["weight"] for i in range(len(all_paths_for_node))]
-                # print(all_paths_for_node)
-                print(path_weigths)
+
                 graph = select_best_path(graph, all_paths_for_node, path_length, path_weigths, delete_entry_node=False,
                                          delete_sink_node=True)
+                graph = solve_out_tips(graph, ending_nodes)
                 break
     return graph
 
@@ -406,12 +403,29 @@ def draw_graph(graph, graphimg_file):  # pragma: no cover
     # ==============================================================
     # Main program
     # ==============================================================
-    # def main(): # pragma: no cover
+
+
+def main():
     """
     Main program function
     """
     # Get arguments
     args = get_arguments()
+    fastq = args.fastq_file
+    kmersize = args.kmer_size
+    outfile = args.output_file
+
+    kmerdict = build_kmer_dict(fastq, kmersize)
+    graph = build_graph(kmerdict)
+    graph = simplify_bubbles(graph)
+    entry = get_starting_nodes(graph)
+    sink = get_sink_nodes(graph)
+    graph = solve_entry_tips(graph, entry)
+    graph = solve_out_tips(graph, sink)
+    start = get_starting_nodes(graph)
+    end = get_sink_nodes(graph)
+    conts = get_contigs(graph, start, end)
+    save_contigs(conts, outfile)
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
@@ -420,5 +434,6 @@ def draw_graph(graph, graphimg_file):  # pragma: no cover
     # if args.graphimg_file:
     #     draw_graph(graph, args.graphimg_file)
 
-# if __name__ == '__main__': # pragma: no cover
-# main()
+
+if __name__ == '__main__':  # pragma: no cover
+    main()
